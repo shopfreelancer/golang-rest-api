@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"go-rest-api/models"
 	"log"
@@ -8,14 +9,17 @@ import (
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
+	mongo "github.com/mongodb/mongo-go-driver/mongo"
 )
 
 // ArticleController struct
-type ArticleController struct{}
+type ArticleController struct {
+	database *mongo.Database
+}
 
 // NewArticleController handles methods for article resource
-func NewArticleController() *ArticleController {
-	return &ArticleController{}
+func NewArticleController(d *mongo.Database) *ArticleController {
+	return &ArticleController{d}
 }
 
 // ShowArticle show one article resource
@@ -51,6 +55,15 @@ func (ac ArticleController) CreateArticle(w http.ResponseWriter, r *http.Request
 	json.NewDecoder(r.Body).Decode(&a)
 
 	a.ID = 999
+
+	collection := ac.database.Collection("articles")
+
+	res, err := collection.InsertOne(context.Background(), a)
+	if err != nil {
+		log.Println(err)
+	}
+	id := res.InsertedID
+	log.Println(id)
 
 	j, err := json.Marshal(a)
 
