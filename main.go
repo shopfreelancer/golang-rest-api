@@ -46,6 +46,6 @@ func showArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 // Create a new article resource
 // curl -X POST -H "Content-Type: application/json" -d '{"id":33,"title":"asdasd"}' localhost:8080/article/
-func createArticle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
+func createArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fmt.Printf("%s", ps)
 }
