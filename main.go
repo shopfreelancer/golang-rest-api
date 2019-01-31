@@ -6,23 +6,28 @@ import (
 	"go-rest-api/models"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
 	router := httprouter.New()
-	router.GET("/article/:articleId", ShowArticle)
+	router.GET("/article/:articleID", showArticle)
+	router.POST("/article", createArticle)
 	http.ListenAndServe(":8080", router)
 
 }
 
-func ShowArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// showArticle show one article resource
+// this site is super useful when it comes to creating structs based on json
+// https://mholt.github.io/json-to-go/
+func showArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	articleId := ps.ByName("articleId")
+	articleID, _ := strconv.Atoi(ps.ByName("articleID"))
 
 	a1 := models.Article{
-		ID:    33,
+		ID:    articleID,
 		Title: "asdasd",
 	}
 
@@ -32,6 +37,15 @@ func ShowArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Println(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(j)
+
 	fmt.Printf("%s", j)
-	fmt.Printf("%s", articleId)
+}
+
+// Create a new article resource
+// curl -X POST -H "Content-Type: application/json" -d '{"id":33,"title":"asdasd"}' localhost:8080/article/
+func createArticle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
 }
