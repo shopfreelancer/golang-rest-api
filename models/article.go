@@ -1,6 +1,8 @@
 package models
 
+import "github.com/mongodb/mongo-go-driver/bson/primitive"
+
 type Article struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
+	ID    primitive.ObjectID `json:"id" bson:"_id"`
+	Title string             `json:"title"`
 }
