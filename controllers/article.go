@@ -19,8 +19,9 @@ type ArticleController struct {
 	database *mongo.Database
 }
 
-type errorMessage struct {
-	message string
+// ErrorMessage - simple struct for json error message
+type ErrorMessage struct {
+	Message string `json:"message"`
 }
 
 // NewArticleController handles methods for article resource
@@ -73,28 +74,26 @@ func (ac ArticleController) ShowArticle(w http.ResponseWriter, r *http.Request, 
 	if err1 != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		msg := "Not a valid Object ID"
-		fmt.Fprintf(w, "%s\n", msg)
+		msg := ErrorMessage{"Not a valid Object ID"}
+		j, _ := json.Marshal(msg)
+		w.Write(j)
 		return
 	}
 
-	filter := bson.M{"_id": articleIdHex}
-
-	fmt.Printf("%s", filter)
-
 	a := models.Article{}
 
-	err := collection.FindOne(context.Background(), filter).Decode(&a)
+	err := collection.FindOne(context.Background(), bson.M{"_id": articleIdHex}).Decode(&a)
 
 	if err != nil {
-		log.Fatal(err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		msg := ErrorMessage{"No matching article found"}
+		j, _ := json.Marshal(msg)
+		w.Write(j)
+		return
 	}
 
-	j, err := json.Marshal(a)
-
-	if err != nil {
-		log.Println(err)
-	}
+	j, _ := json.Marshal(a)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
