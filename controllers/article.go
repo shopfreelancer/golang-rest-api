@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"go-rest-api/models"
 	"log"
 	"net/http"
@@ -37,29 +36,29 @@ func (ac ArticleController) Index(w http.ResponseWriter, r *http.Request, ps htt
 	cur, err := collection.Find(context.Background(), filter)
 
 	if err != nil {
-		log.Fatal(err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		msg := ErrorMessage{"No matching articles found"}
+		j, _ := json.Marshal(msg)
+		w.Write(j)
+		return
 	}
 
+	// struct for collection of articles
 	var articles []models.Article
+
 	defer cur.Close(context.Background())
 	for cur.Next(context.Background()) {
-		raw, err := cur.DecodeBytes()
-		if err != nil {
-			log.Fatal(err)
-		}
-		// do something with elem....
 		a := models.Article{}
+		cur.Decode(&a)
 		articles = append(articles, a)
-		bson.Unmarshal(raw, &a)
-
 	}
 
-	fmt.Printf("%s", articles)
-	//w.Write(articles)
+	j, _ := json.Marshal(articles)
 
-	if err := cur.Err(); err != nil {
-		log.Fatal(err)
-	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(j)
 
 }
 
@@ -138,6 +137,33 @@ func (ac ArticleController) CreateArticle(w http.ResponseWriter, r *http.Request
 // DeleteArticle  - delete one article by id
 // curl -X DELETE -H "Content-Type: application/json" -d '{"title":"asdasd"}' localhost:8080/article/1
 func (ac ArticleController) DeleteArticle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	collection := ac.database.Collection("articles")
+
+	articleID := ps.ByName("articleID")
+	articleIdHex, err1 := primitive.ObjectIDFromHex(articleID)
+
+	if err1 != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		msg := ErrorMessage{"Not a valid Object ID"}
+		j, _ := json.Marshal(msg)
+		w.Write(j)
+		return
+	}
+
+	res, err := collection.DeleteOne(context.Background(), bson.M{"_id": articleIdHex})
+
+	if err != nil || res.DeletedCount == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		msg := ErrorMessage{"No matching article found"}
+		j, _ := json.Marshal(msg)
+		w.Write(j)
+		return
+
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
+
 }
